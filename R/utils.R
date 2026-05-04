@@ -8,7 +8,7 @@
 #' @param labels
 #' @param type
 #' @param labels2
-#' @param type2
+#' @param type1
 #' @param len
 #' @param tolerance
 #'
@@ -28,7 +28,9 @@ fi_observed <- function(xdf, spp, labels = NULL, type = NULL, labels2 = NULL, ty
   row.names(gout) <- gout$species
   gout$species <- NULL
 
+  #one hot encoding but it drops NAs
   guild2 <- model.matrix(~ . - 1, data = gout)
+  colnames(guild2) <- sub(paste0("^(", paste(colnames(gout), collapse="|"), ")"),"\\1.",colnames(guild2))
 
   lab = if(len==FALSE) labels else labels2
 
@@ -44,17 +46,23 @@ fi_observed <- function(xdf, spp, labels = NULL, type = NULL, labels2 = NULL, ty
   faun01 <- pa(df)
 
   den <- apply(df,1,sum)
+
   ric <- apply(faun01,1,sum)
-  gfaunA <- as.data.frame(as.matrix(df)%*%as.matrix(guild3))
-  gfaunR <- as.data.frame(as.matrix(faun01)%*%as.matrix(guild3))
-  names(gfaunA) <- paste("dens",names(gfaunA),sep=".")
-  names(gfaunR) <- paste("ric",names(gfaunR),sep=".")
-  w <- cbind(gfaunA,gfaunR)
+
+  densval <- as.data.frame(as.matrix(df)%*%as.matrix(guild3))
+
+  ricval <- as.data.frame(as.matrix(faun01)%*%as.matrix(guild3))
+
+  names(densval) <- paste("dens",names(densval),sep=".")
+
+  names(ricval) <- paste("ric",names(ricval),sep=".")
+
+  w <- cbind(densval,ricval)
 
   if(len==FALSE){
     w1 <- w[,paste(type,labels,sep=".")]
   }else{
-    w1 <- w[,paste(type2,labels2,sep=".")]
+    w1 <- w[,paste(type1,labels2,sep=".")]
   }
 
   f2 <- function(x,tol) ifelse(abs(x) < tol & !is.na(x),0,x)
@@ -74,7 +82,7 @@ fi_observed <- function(xdf, spp, labels = NULL, type = NULL, labels2 = NULL, ty
 
   psalmo <- ifelse(den==0,NA,psalmo/den)
 
-  return(list(w2, ric, den, psalmo))
+  return(list(w2, ric, den, psalmo, guild2))
 }
 
 
@@ -108,19 +116,19 @@ fi_expected <- function(env, model=TRUE){
 #' @param df
 #' @param region
 #' @param lat
+#' @param efitype
 #' @param medtype
-#' @param spp
 #'
 #' @returns
 #' @export
 #'
 #' @examples
-ecoregions <- function(df, spp, region, lat, medtype){
+ecoregions <- function(df, region, lat, medtype, efitype){
 
   #get ecoregions on boarded: can changed
   ecodata <- efiplusr::ecodata
 
-  e1 <- merge(x=df, y =ecodata, by.x = region, by.y ="ecoregion")
+  e1 <- merge(x=df, y = ecodata, by.x = region, by.y ="ecoregion")
 
   #safegaurd for different options
   e1$medizone <- ifelse(e1[, medtype] %in% c(1, "1", "yes", "YES", "Yes", TRUE, "TRUE"),"Yes",
@@ -133,19 +141,88 @@ ecoregions <- function(df, spp, region, lat, medtype){
                                         ifelse(e1$ecoabbr %in% c("Fen","Bor"), "Nor",
                                                e1$ecoabbr))))
 
-  efidata <- efiplusr::efitype
-  e2 <-  merge(e1, efidata, by.x = spp, by.y = "species")
+  #efidata <- efiplusr::efitype
+  #e1 <-  merge(e1, efidata, by.x = spp, by.y = "species")
 
 
-  e2$efitype <- ifelse(e2$efizone == "T.NA",NA,
-                 ifelse(e2$ecoregions %in% c("Est", "Bal", "Med") |
-                          e2$efizone %in% c("T.5", "T.6", "T.14", "T.15") |
-                          e2$medizone == "Yes", "Cyprinid", "Salmonid"))
+  e1$efitype <- ifelse(e1[,efitype] == "T.NA",NA,
+                 ifelse(e1$ecoregions %in% c("Est", "Bal", "Med") |
+                          e1[,efitype] %in% c("T.5", "T.6", "T.14", "T.15") |
+                          e1$medizone == "Yes", "Cyprinid", "Salmonid"))
 
-  e2$efitype[e2$ecoregions %in% c("Alp", "Nor")] <- "Salmonid"
-  return(e2)
+  e1$efitype[e1$ecoregions %in% c("Alp", "Nor")] <- "Salmonid"
+
+  return(e1)
 }
 
+distmetric <- function(x, labels, ecoregion, mode = "none"){
+
+    match.arg(mode, choices = c("none", "trout", "notrout"))
+
+    expectedout   <-  x$expected
+
+    obsout        <-  x$observed
+
+    if(mode=="none"){
+        centrs   <- stdpacklength$center
+        scaless  <-  stdpacklength$scale
+        limits   <- stdpacklength$limits[labels]
+    }else if(mode=="trout"){
+        centrs    <- stdpackTrout$center
+        scaless   <-  stdpackTrout$scale
+        limits    <- stdpackTrout$limits[labels]
+        qclass    <- stdpackTrout$qclass
+    }else{
+        centrs    <- stdpackNoTrout$center
+        scaless   <- stdpackNoTrout$scale
+        limits    <- stdpackNoTrout$limits[labels]
+        qclass    <- stdpackNoTrout$qclass
+    }
+
+    eregions <-  ecoregion$ecoregions
+
+    #select variables
+    scalev      <-  scaless[labels]
+    centerv     <-  centrs[,labels]
+    obsv1       <-  obsout[, labels]
+    fitted1     <-  expectedout[,labels]
+
+    #log transform the data
+    obsvv       <- log(obsv1+1)
+    fittedvv    <- log(fitted1+1)
+
+    #aligh the columns and rows
+    indrowv <- match(eregions,row.names(centerv))
+    indcolv <- match(names(obsvv),names(centerv))
+    meancenter <- centerv[indrowv,indcolv]
+
+    #get residuals in log spcace
+    residual <- obsvv-fittedvv
+
+    #centering the data
+    resv <- as.matrix(residual-meancenter)
+
+    #standardization z-score
+    zscore <- sweep(resv, MARGIN =  2, STATS = scalev, "/", check.margin = FALSE)
+
+    #standardized zscore
+    out <- as.data.frame(zscore)
+
+    if(mode !="none"){
+        object_nt <- out[,labels]
+        res1 <- data.frame(sapply(1:ncol(object_nt),function(x) punif(object_nt[,x],limits[1,x],limits[2,x])))
+        names(res1) <- labels
+        row.names(res1) <- row.names(out)
+
+        #ClassifIDScoring
+        ss <- as.data.frame(sapply(labels, function(x) 6-as.numeric(cut(res1[,x],qclass[,x],right=FALSE))))
+        row.names(ss) <- row.names(res1)
+        names(ss) <- labels
+        out <- list(zscore = out, idscore = ss)
+    }
+
+   return(out)
+}
 
 
 

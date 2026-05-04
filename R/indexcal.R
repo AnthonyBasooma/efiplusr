@@ -30,24 +30,10 @@
 #' @export
 #'
 #' @examples
-fi_index <- function(x, species, code, runs,
-  slope = "Actual.river.slope",
-  tempjan = "Temp.jan",
-  tempjul = "Temp.jul",
-  water = "Water.source.type",
-  sediment = "Natural.sediment",
-  geomorph = "Geomorph.river.type",
-  method = "Method",
-  area = "Area.ctch",
-  floodpsite = "Floodplain.site",
-  distsource = "Distance.from.source",
-  labels,
-  type,
-  labels2,
-  type2,
-  len_up = "Number.length.over.150",
-  len_down = "Number.length.below.150",
-  tolerance = 1e-7){
+fi_index <- function(x, species, code, runs, slope, tempjan,tempjul, water,sediment,
+                     geomorph,method,area,floodpsite,
+                     distsource, labels, type, labels2,
+                     type2, len_up,len_down, tolerance = 1e-7){
 
   #==========
   spp <-  unlist(x[, species])
@@ -67,6 +53,7 @@ fi_index <- function(x, species, code, runs,
   richness <- obsm[[2]]
   dens     <- obsm[[3]]
   psalmo   <- obsm[[4]]
+  dall       <- obsm[[5]]
 
   len1       <- fi_observed(xdf = len_b150, spp = spp, type2 = type2,  labels2 = labels2, tolerance=tolerance, len = TRUE)[[1]]
 
@@ -103,12 +90,10 @@ fi_index <- function(x, species, code, runs,
   fldpl <- unlist(df[,floodpsite])
 
   # watersource
-  watersource <- as.factor(c("Non-Pluvial","Non-Pluvial","Non-Pluvial",
-  "Pluvial")[match(water,c("Glacial","Groundwater","Nival","Pluvial"))])
+  watersource <- as.factor(c("Non-Pluvial","Non-Pluvial","Non-Pluvial","Pluvial")[match(water,c("Glacial","Groundwater","Nival","Pluvial"))])
 
   # geomorph
-  geomorph <- as.factor(c("braided","meand","meand","constraint","sinuous")[match(geomorph,
-  c("Braided","Meand regular","Meand tortous","Naturally constraint no mob","Sinuous"))])
+  geomorph <- as.factor(c("braided","meand","meand","constraint","sinuous")[match(geomorph,c("Braided","Meand regular","Meand tortous","Naturally constraint no mob","Sinuous"))])
 
   # method   "Boat"   "Mixed"  "Wading"
   method <- as.factor(c("boat","noboat","noboat")[match(method,c("Boat","Mixed","Wading"))])
@@ -126,15 +111,13 @@ fi_index <- function(x, species, code, runs,
   syngeom1 <- predict(geomodels[[1]],newdata=dout)
   syngeom2 <- predict(geomodels[[2]],newdata=dout)
 
-
-  env11 <- data.frame(dout,syngeomorph1=syngeom1,syngeomorph2=syngeom2,richesse=richness,captures=dens,psalmo=psalmo)
-
-  env1 <- data.frame(df,env11)
-
+  env1 <- data.frame(df, dout,syngeomorph1=syngeom1,syngeomorph2=syngeom2,richesse=richness,captures=dens,psalmo=psalmo)
 
   fitm   <- fi_expected(env = env1, model = TRUE)
 
   fitlen <- fi_expected(env = env1, model = FALSE)
 
-  return(list(envdata= env1, observed=w2, expected = fitm, oblengthb150= len1, oblengthu150 = len2, expectedlength = fitlen))
+  return(list(envdata= env1, observed=w2, expected = fitm,
+              oblengthb150= len1, oblengthu150 = len2,
+              expectedlength = fitlen, dall = dall))
 }
