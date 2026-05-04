@@ -233,7 +233,7 @@ metricscore <- function(env, lat, labels, region, medtype,  mode = "none", obser
         ss <- as.data.frame(sapply(labels, function(x) 6-as.numeric(cut(res1[,x],qclass[,x],right=FALSE))))
         row.names(ss) <- row.names(res1)
         names(ss) <- labels
-        out <- list(zscore = out, idscore = ss)
+        out <- list(index = out, idscore = ss)
     }
 
    return(out)

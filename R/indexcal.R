@@ -129,5 +129,5 @@ fi_index <- function(x, species, code, runs, lat, region,
   notrout <- metricscore(env = env1,region = region, lat = lat, labels = cyprinidindex,efitype = efitype,
                        medtype = medtype, mode = "cpyrinid", observed = w2, expected = expectedval, obslength = len1)
 
-  return(list(salmonid = trout, notrount = notrout))
+  return(list(salmonid = trout, cpyrinid = notrout))
 }

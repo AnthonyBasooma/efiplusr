@@ -7,7 +7,8 @@
 
 <!-- badges: end -->
 
-The goal of efiplusr is to …
+The goal of efiplusr is to calculate the European Fish Index that
+evaluate the ecosystem status based on the undisturbed environment.
 
 ## Installation
 
@@ -38,7 +39,7 @@ type1 <- c("dens","dens","ric","dens")
 labels2 <- c("WQO2.O2INTOL","HTOL.HINTOL")
 type2 <- rep("dens",2)
 
-output <- fi_index(x=inputdata, 
+outputindex <- fi_index(x=inputdata, 
                      species = "Species", 
                      code = "code", 
                      runs = "Total.number.run1",
@@ -64,4 +65,16 @@ output <- fi_index(x=inputdata,
                      labels2 = labels2,
                      salmonidindex = c("dens.WQO2.O2INTOL","dens.HTOL.HINTOL"),
                      cyprinidindex = c("ric.HabSp.RHPAR","dens.Repro.LITH"))
+
+salmonidindex <- outputindex$salmonid$index
+salmonidindex
+#>               dens.WQO2.O2INTOL dens.HTOL.HINTOL
+#> xxxxxx_5_8_20         0.6412943        0.8400817
+#> zzzzzz_5_8_20         0.6412943        0.8400817
+
+cyprinidindex <- outputindex$cpyrinid$index
+cyprinidindex
+#>               ric.HabSp.RHPAR dens.Repro.LITH
+#> xxxxxx_5_8_20        1.041766      -0.2259718
+#> zzzzzz_5_8_20        1.041766      -0.2259718
 ```
