@@ -1,21 +1,18 @@
 Package: efiplusr
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Computes the European Fish Index
 Version: 0.1.0
-Authors@R: c(
-    person(
-      "Jane", "Doe",
-      email = "jane@example.com",
-      role = c("aut", "cre")
-    )
-  )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Authors@R: c( 
+    person(given = "Anthony", family = "Basooma", email = "anthony.basooma@boku.ac.at", 
+    role = c("aut", "cre"),comment = c(ORCID = "0000-0002-8994-9989")),
+    person("Florian", "Borgwardt", role = c("ctb","fnd"), comment = c(ORCID = "0000-0002-8974-7834"))
+           )
+Description: To compute the European Fish Index developed in 2008. The tool metarphosis from the efiplus tool.
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/AnthonyBasooma/efiplusr
 BugReports: https://github.com/AnthonyBasooma/efiplusr/issues
 Depends: 
-    R (>= 3.5)
+    R (>= 4.5)
 RoxygenNote: 7.3.3

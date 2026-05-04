@@ -111,98 +111,113 @@ fi_expected <- function(env, model=TRUE){
 }
 
 
-#' Title
+#' Standardized distance between the observed (sampled) and expected (no alteration) values in the community
 #'
-#' @param df
-#' @param region
+#' @param labels
+#' @param mode
 #' @param lat
-#' @param efitype
+#' @param region
 #' @param medtype
+#' @param env
+#' @param observed
+#' @param expected
+#' @param obslength
+#' @param efitype
 #'
 #' @returns
 #' @export
 #'
 #' @examples
-ecoregions <- function(df, region, lat, medtype, efitype){
+metricscore <- function(env, lat, labels, region, medtype,  mode = "none", observed, expected, obslength, efitype){
 
-  #get ecoregions on boarded: can changed
-  ecodata <- efiplusr::ecodata
+    match.arg(mode, choices = c("none", "salmonid", "cpyrinid"))
 
-  e1 <- merge(x=df, y = ecodata, by.x = region, by.y ="ecoregion")
+    #process regions and ecoregions
 
-  #safegaurd for different options
-  e1$medizone <- ifelse(e1[, medtype] %in% c(1, "1", "yes", "YES", "Yes", TRUE, "TRUE"),"Yes",
-               ifelse(e1[, medtype] %in% c(0, "0", "no", "NO", "No", FALSE, "FALSE"),"No",NA))
+    #get ecoregions on boarded: can changed
+    ecodata <- efiplusr::ecodata
 
-  e1$ecoregions <- ifelse(e1$medizone == "Yes" & df[, lat] < 45 &
-                            e1$ecoabbr %in% c("Ita", "W.p", "Ibe"),"Med",
-                          ifelse(e1$ecoabbr %in% c("Alp","Pyr"), "Alp",
-                                 ifelse(e1$ecoabbr %in% c("E.p","Pon","Hun"), "Est",
-                                        ifelse(e1$ecoabbr %in% c("Fen","Bor"), "Nor",
-                                               e1$ecoabbr))))
+    #column name with ecoregions
+    e1 <- merge(x=env, y = ecodata, by.x = region, by.y ="ecoregion")
 
-  #efidata <- efiplusr::efitype
-  #e1 <-  merge(e1, efidata, by.x = spp, by.y = "species")
+    #safegaurd for different options
+    e1$medizone <- ifelse(e1[, medtype] %in% c(1, "1", "yes", "YES", "Yes", TRUE, "TRUE"),"Yes",
+                 ifelse(e1[, medtype] %in% c(0, "0", "no", "NO", "No", FALSE, "FALSE"),"No",NA))
+
+    e1$ecoregions <- ifelse(e1$medizone == "Yes" & env[, lat] < 45 &
+                              e1$ecoabbr %in% c("Ita", "W.p", "Ibe"),"Med",
+                            ifelse(e1$ecoabbr %in% c("Alp","Pyr"), "Alp",
+                                   ifelse(e1$ecoabbr %in% c("E.p","Pon","Hun"), "Est",
+                                          ifelse(e1$ecoabbr %in% c("Fen","Bor"), "Nor",
+                                                 e1$ecoabbr))))
+
+    #efidata <- efiplusr::efitype
+    #e1 <-  merge(e1, efidata, by.x = spp, by.y = "species")
 
 
-  e1$efitype <- ifelse(e1[,efitype] == "T.NA",NA,
-                 ifelse(e1$ecoregions %in% c("Est", "Bal", "Med") |
-                          e1[,efitype] %in% c("T.5", "T.6", "T.14", "T.15") |
-                          e1$medizone == "Yes", "Cyprinid", "Salmonid"))
+    e1$efitype <- ifelse(e1[,efitype] == "T.NA",NA,
+                   ifelse(e1$ecoregions %in% c("Est", "Bal", "Med") |
+                            e1[,efitype] %in% c("T.5", "T.6", "T.14", "T.15") |
+                            e1$medizone == "Yes", "Cyprinid", "Salmonid"))
 
-  e1$efitype[e1$ecoregions %in% c("Alp", "Nor")] <- "Salmonid"
+    e1$efitype[e1$ecoregions %in% c("Alp", "Nor")] <- "Salmonid"
 
-  return(e1)
-}
+    #get the observed and expected values
+    row.names(e1) <- e1$code
 
-distmetric <- function(x, labels, ecoregion, mode = "none"){
+    tf <- rownames(e1)%in%rownames(observed)
 
-    match.arg(mode, choices = c("none", "trout", "notrout"))
+    region22 <- e1[which(tf==TRUE),]
 
-    expectedout   <-  x$expected
+    tf2 <- rownames(region22)%in%rownames(obslength)
 
-    obsout        <-  x$observed
+    regionlength <- region22[which(tf2==TRUE),]
+
 
     if(mode=="none"){
-        centrs   <- stdpacklength$center
-        scaless  <-  stdpacklength$scale
-        limits   <- stdpacklength$limits[labels]
-    }else if(mode=="trout"){
-        centrs    <- stdpackTrout$center
-        scaless   <-  stdpackTrout$scale
-        limits    <- stdpackTrout$limits[labels]
-        qclass    <- stdpackTrout$qclass
+        stdata <- efiplusr::stdpacklength
+        centrs   <- stdata$center
+        scaless  <-  stdata$scale
+        limits   <- stdata$limits[labels]
+    }else if(mode=="salmonid"){
+        stdata    <- efiplusr::stdpackTrout
+        centrs    <- stdata$center
+        scaless   <-  stdata$scale
+        limits    <- stdata$limits[labels]
+        qclass    <- stdata$qclass
     }else{
-        centrs    <- stdpackNoTrout$center
-        scaless   <- stdpackNoTrout$scale
-        limits    <- stdpackNoTrout$limits[labels]
-        qclass    <- stdpackNoTrout$qclass
+        stdata    <- efiplusr::stdpackNoTrout
+        centrs    <- stdata$center
+        scaless   <- stdata$scale
+        limits    <- stdata$limits[labels]
+        qclass    <- stdata$qclass
     }
 
-    eregions <-  ecoregion$ecoregions
+    eregions <-  regionlength$ecoregions
 
     #select variables
     scalev      <-  scaless[labels]
     centerv     <-  centrs[,labels]
-    obsv1       <-  obsout[, labels]
-    fitted1     <-  expectedout[,labels]
+    obsv1       <-  observed[, labels]
+    fitted1     <-  expected[,labels]
 
     #log transform the data
     obsvv       <- log(obsv1+1)
     fittedvv    <- log(fitted1+1)
 
-    #aligh the columns and rows
+    #Median value of the residuals in the ecoregion
+    #median is chosen because it is less sensitive to extreme values than the mean.
     indrowv <- match(eregions,row.names(centerv))
     indcolv <- match(names(obsvv),names(centerv))
     meancenter <- centerv[indrowv,indcolv]
 
-    #get residuals in log spcace
+    #model residual, i.e. difference between observed and expected metric value for the given site
     residual <- obsvv-fittedvv
 
     #centering the data
     resv <- as.matrix(residual-meancenter)
 
-    #standardization z-score
+    #Standard deviation of the residuals in the whole undisturbed dataset for a given river zone(Salmonid or Cyprinid)
     zscore <- sweep(resv, MARGIN =  2, STATS = scalev, "/", check.margin = FALSE)
 
     #standardized zscore

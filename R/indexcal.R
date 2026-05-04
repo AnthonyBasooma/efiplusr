@@ -30,10 +30,16 @@
 #' @export
 #'
 #' @examples
-fi_index <- function(x, species, code, runs, slope, tempjan,tempjul, water,sediment,
+fi_index <- function(x, species, code, runs, lat, region,
+                     slope, tempjan,tempjul, water,sediment,
                      geomorph,method,area,floodpsite,
                      distsource, labels, type, labels2,
-                     type2, len_up,len_down, tolerance = 1e-7){
+                     medtype,
+                     salmonidindex,
+                     cyprinidindex,
+                     efitype,
+                     type2, len_up,len_down,
+                     tolerance = 1e-7){
 
   #==========
   spp <-  unlist(x[, species])
@@ -53,7 +59,7 @@ fi_index <- function(x, species, code, runs, slope, tempjan,tempjul, water,sedim
   richness <- obsm[[2]]
   dens     <- obsm[[3]]
   psalmo   <- obsm[[4]]
-  dall       <- obsm[[5]]
+  dall     <- obsm[[5]]
 
   len1       <- fi_observed(xdf = len_b150, spp = spp, type2 = type2,  labels2 = labels2, tolerance=tolerance, len = TRUE)[[1]]
 
@@ -113,11 +119,15 @@ fi_index <- function(x, species, code, runs, slope, tempjan,tempjul, water,sedim
 
   env1 <- data.frame(df, dout,syngeomorph1=syngeom1,syngeomorph2=syngeom2,richesse=richness,captures=dens,psalmo=psalmo)
 
-  fitm   <- fi_expected(env = env1, model = TRUE)
+  expectedval   <- fi_expected(env = env1, model = TRUE)
 
   fitlen <- fi_expected(env = env1, model = FALSE)
 
-  return(list(envdata= env1, observed=w2, expected = fitm,
-              oblengthb150= len1, oblengthu150 = len2,
-              expectedlength = fitlen, dall = dall))
+  trout <- metricscore(env = env1, region = region, lat = lat, labels = salmonidindex, efitype = efitype,
+                       medtype = medtype, mode = "salmonid", observed = w2, expected = expectedval, obslength = len1)
+
+  notrout <- metricscore(env = env1,region = region, lat = lat, labels = cyprinidindex,efitype = efitype,
+                       medtype = medtype, mode = "cpyrinid", observed = w2, expected = expectedval, obslength = len1)
+
+  return(list(salmonid = trout, notrount = notrout))
 }
