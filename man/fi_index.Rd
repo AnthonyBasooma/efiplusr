@@ -10,7 +10,7 @@ fi_index(
   code,
   runs,
   lat,
-  ecoregion,
+  region,
   slope,
   tempjan,
   tempjul,

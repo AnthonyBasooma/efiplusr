@@ -1,18 +1,28 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
 
 # efiplusr
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
-The goal of efiplusr is to …
+The goal of efiplusr is to ...
 
 ## Installation
 
-You can install the development version of efiplusr from
-[GitHub](https://github.com/) with:
+You can install the development version of efiplusr from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
@@ -23,7 +33,7 @@ pak::pak("AnthonyBasooma/efiplusr")
 
 The example code is used to run test the European Fish Index.
 
-``` r
+```{r example}
 library(efiplusr)
 #The fish data required 
 
@@ -65,3 +75,5 @@ output <- fi_index(x=inputdata,
                      salmonidindex = c("dens.WQO2.O2INTOL","dens.HTOL.HINTOL"),
                      cyprinidindex = c("ric.HabSp.RHPAR","dens.Repro.LITH"))
 ```
+
+
